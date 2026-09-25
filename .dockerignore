@@ -1,0 +1,14 @@
+# Image runtime hanya butuh kode aplikasi — sisanya dipasang/dipasang ulang.
+vendor/
+node_modules/
+.git/
+.env
+storage/
+out/
+tools/
+docs/
+docker/
+*.xlsx
+prompt.md
+.dockerignore
+.phpunit.result.cache

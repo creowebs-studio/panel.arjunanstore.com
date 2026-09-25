@@ -1,0 +1,110 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: arj_app
+    working_dir: /var/www/html
+    volumes:
+      - app_data:/var/www/html/storage
+    environment:
+      WEBPORT: "${WEBPORT:-8000}"
+      DB_DATABASE: "${DB_DATABASE:-arj}"
+      DB_USERNAME: "${DB_USERNAME:-arj}"
+      DB_PASSWORD: "${DB_PASSWORD:-secret}"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-8000}:8000"
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: arj_worker
+    working_dir: /var/www/html
+    volumes:
+      - app_data:/var/www/html/storage
+    environment:
+      APP_ENV: production
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_DATABASE: "${DB_DATABASE:-arj}"
+      DB_USERNAME: "${DB_USERNAME:-arj}"
+      DB_PASSWORD: "${DB_PASSWORD:-secret}"
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    depends_on:
+      app:
+        condition: service_started
+    command: ["bash", "-lc", "cd /var/www/html && php artisan queue:work redis --tries=3 --sleep=3"]
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: arj_scheduler
+    working_dir: /var/www/html
+    volumes:
+      - app_data:/var/www/html/storage
+    environment:
+      APP_ENV: production
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_DATABASE: "${DB_DATABASE:-arj}"
+      DB_USERNAME: "${DB_USERNAME:-arj}"
+      DB_PASSWORD: "${DB_PASSWORD:-secret}"
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    depends_on:
+      app:
+        condition: service_started
+    command: ["bash", "-lc", "cd /var/www/html && php artisan schedule:work"]
+
+  mysql:
+    # 8.0 = sama dengan MySQL apt di WSL (paritas jalur native & Docker).
+    image: mysql:8.0
+    container_name: arj_mysql
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-arj}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_USER: ${DB_USERNAME:-arj}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+    ports:
+      - "${DB_EXPOSE_PORT:-13306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${DB_PASSWORD:-secret}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: arj_redis
+    ports:
+      - "${REDIS_EXPOSE_PORT:-16379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  app_data:
+  mysql_data:
+  redis_data:

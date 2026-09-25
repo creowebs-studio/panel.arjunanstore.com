@@ -1,0 +1,34 @@
+# Aplikasi = repo root (struktur Laravel standar, tanpa generate/overlay).
+
+# Dependensi & artefak build
+/vendor/
+/node_modules/
+/public/build/
+/public/hot
+/public/storage
+/out/
+
+# Environment & secrets
+.env
+.env.backup
+.env.production
+auth.json
+
+# Cache & log
+.phpunit.result.cache
+*.log
+/npm-debug.log
+/yarn-error.log
+/storage/*.key
+/storage/pail
+
+# Editor / OS
+/.idea
+/.vscode
+*.swp
+.DS_Store
+Thumbs.db
+
+# Workbook sumber (puluhan MB) TIDAK dilacak agar repo tetap ringan —
+# file tetap ada di disk lokal, cukup dikecualikan dari git.
+*.xlsx
